@@ -8,7 +8,7 @@ function History() {
 
     const history = useMemo(() => {
         const transactions = transactionHistory()
-        return transactions.slice(0, 5) // Get only the 5 most recent transactions
+        return transactions.slice(0, 5)
     }, [transactionHistory])
 
     if (history.length === 0) {

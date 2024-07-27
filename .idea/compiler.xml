@@ -7,8 +7,12 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="Spring" />
+        <module name="api-gateway" />
         <module name="Backend" />
+        <module name="auth-service" />
+        <module name="expense-service" />
+        <module name="Spring" />
+        <module name="income-service" />
       </profile>
     </annotationProcessing>
   </component>
@@ -16,6 +20,10 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Backend" options="-parameters" />
       <module name="Spring" options="-parameters" />
+      <module name="api-gateway" options="-parameters" />
+      <module name="auth-service" options="-parameters" />
+      <module name="expense-service" options="-parameters" />
+      <module name="income-service" options="-parameters" />
     </option>
   </component>
 </project>

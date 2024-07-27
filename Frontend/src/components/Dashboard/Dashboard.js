@@ -88,7 +88,7 @@ function Dashboard() {
 
 const DashboardStyled = styled.div`
     position: relative;
-    padding-bottom: 200px; // Add padding to make room for AmountContainer
+    padding-bottom: 200px;
 `;
 
 const ContentWrapper = styled.div`
