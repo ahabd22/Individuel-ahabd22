@@ -1,18 +1,19 @@
-import React, {useState} from 'react'
+import React, { useState } from 'react'
 import styled from "styled-components";
-import {MainContent, MainLayout} from './styles/Layouts'
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
+import { MainLayout } from './styles/Layouts'
 import Navigation from './components/Navigation/Navigation'
 import Dashboard from './components/Dashboard/Dashboard';
 import Income from './components/Income/Income'
 import Expenses from './components/Expenses/Expenses';
-import {useGlobalContext} from './context/globalContext';
+import { useGlobalContext } from './context/globalContext';
 import StockData from './components/StockData/StockData';
+import Login from './components/Login/Login';
+import Register from './components/Registration/Register';
 
 function App() {
   const [active, setActive] = useState(1)
-
-  const global = useGlobalContext()
-  console.log(global);
+  const { token } = useGlobalContext()
 
   const displayData = () => {
     switch(active){
@@ -22,23 +23,33 @@ function App() {
         return <Income />
       case 3:
         return <Expenses />
-      case 4: 
+      case 4:
         return <StockData />
-      default: 
+      default:
         return <Dashboard />
     }
   }
 
-
-
   return (
       <AppStyled className="App">
-        <MainLayout>
-          <Navigation active={active} setActive={setActive} />
-          <MainContent>
-            {displayData()}
-          </MainContent>
-        </MainLayout>
+        <Router>
+          <Routes>
+            <Route path="/login" element={!token ? <Login /> : <Navigate to="/" />} />
+            <Route path="/register" element={!token ? <Register /> : <Navigate to="/" />} />
+            <Route path="/" element={
+              token ? (
+                  <MainLayout>
+                    <Navigation active={active} setActive={setActive} />
+                    <main>
+                      {displayData()}
+                    </main>
+                  </MainLayout>
+              ) : (
+                  <Navigate to="/login" />
+              )
+            } />
+          </Routes>
+        </Router>
       </AppStyled>
   );
 }
