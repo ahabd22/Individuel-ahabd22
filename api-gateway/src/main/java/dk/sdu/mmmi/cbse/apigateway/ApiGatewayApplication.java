@@ -5,11 +5,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SpringBootApplication
 public class ApiGatewayApplication {
+    private static final Logger logger = LoggerFactory.getLogger(ApiGatewayApplication.class);
+
 
     public static void main(String[] args) {
+        logger.info("Starting API Gateway");
         SpringApplication.run(ApiGatewayApplication.class, args);
     }
 
@@ -17,7 +22,7 @@ public class ApiGatewayApplication {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("auth_route", r -> r
-                        .path("/api/v1/auth/**")
+                        .path("/api/auth/**")
                         .uri("http://localhost:8081"))
                 .route("expense_route", r -> r
                         .path("/api/v1/expenses/**")

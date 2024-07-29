@@ -9,7 +9,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>api-gateway</module>
-        <module>auth-service</module>
         <module>expense-service</module>
         <module>income-service</module>
     </modules>
