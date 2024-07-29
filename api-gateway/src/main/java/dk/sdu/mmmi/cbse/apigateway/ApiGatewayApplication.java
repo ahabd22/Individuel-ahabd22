@@ -21,9 +21,6 @@ public class ApiGatewayApplication {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("auth_route", r -> r
-                        .path("/api/auth/**")
-                        .uri("http://localhost:8081"))
                 .route("expense_route", r -> r
                         .path("/api/v1/expenses/**")
                         .uri("http://localhost:8082"))

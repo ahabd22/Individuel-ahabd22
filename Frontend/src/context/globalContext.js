@@ -1,7 +1,7 @@
-import React, {useCallback, useContext, useEffect, useState} from "react"
+import React, { useCallback, useContext, useEffect, useState } from "react"
 import axios from 'axios'
 
-const BASE_URL = "http://localhost:5000/api/v1/";
+const BASE_URL = "http://localhost:5000/";
 
 const GlobalContext = React.createContext()
 
@@ -19,8 +19,8 @@ export const GlobalProvider = ({children}) => {
         }
     }, [])
 
-    const getIncomes = useCallback(() => fetchData(`${BASE_URL}get-incomes`, setIncomes), [fetchData])
-    const getExpenses = useCallback(() => fetchData(`${BASE_URL}get-expenses`, setExpenses), [fetchData])
+    const getIncomes = useCallback(() => fetchData(`${BASE_URL}api/v1/incomes/get-incomes`, setIncomes), [fetchData])
+    const getExpenses = useCallback(() => fetchData(`${BASE_URL}api/v1/expenses/get-expenses`, setExpenses), [fetchData])
 
     useEffect(() => {
         getIncomes()
@@ -29,7 +29,7 @@ export const GlobalProvider = ({children}) => {
 
     const addIncome = async (income) => {
         try {
-            await axios.post(`${BASE_URL}add-income`, income)
+            await axios.post(`${BASE_URL}api/v1/incomes/add-income`, income)
             getIncomes()
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred')
@@ -38,7 +38,7 @@ export const GlobalProvider = ({children}) => {
 
     const deleteIncome = async (id) => {
         try {
-            await axios.delete(`${BASE_URL}delete-income/${id}`)
+            await axios.delete(`${BASE_URL}api/v1/incomes/delete-income/${id}`)
             getIncomes()
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred')
@@ -51,7 +51,7 @@ export const GlobalProvider = ({children}) => {
 
     const addExpense = async (expense) => {
         try {
-            await axios.post(`${BASE_URL}add-expense`, expense)
+            await axios.post(`${BASE_URL}api/v1/expenses/add-expense`, expense)
             getExpenses()
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred')
@@ -60,7 +60,7 @@ export const GlobalProvider = ({children}) => {
 
     const deleteExpense = async (id) => {
         try {
-            await axios.delete(`${BASE_URL}delete-expense/${id}`)
+            await axios.delete(`${BASE_URL}api/v1/expenses/delete-expense/${id}`)
             getExpenses()
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred')
