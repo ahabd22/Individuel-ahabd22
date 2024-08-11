@@ -47,6 +47,7 @@ function ExpenseForm() {
             category: '',
             description: '',
         })
+        setError('')
     }
 
     return (
@@ -79,6 +80,7 @@ function ExpenseForm() {
                     dateFormat="dd/MM/yyyy"
                     onChange={(date) => {
                         setInputState({...inputState, date: date})
+                        setError('') // Clear any errors when date is selected
                     }}
                 />
             </div>

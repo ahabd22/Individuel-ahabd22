@@ -46,6 +46,7 @@ function Form() {
             category: '',
             description: '',
         })
+        setError('')
     }
 
     return (
@@ -78,6 +79,7 @@ function Form() {
                     dateFormat="dd/MM/yyyy"
                     onChange={(date) => {
                         setInputState({...inputState, date: date})
+                        setError('')
                     }}
                 />
             </div>

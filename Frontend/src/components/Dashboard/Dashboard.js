@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useState, useMemo} from 'react'
 import styled from 'styled-components'
 import {useGlobalContext} from '../../context/globalContext';
 import History from '../../History/History';
@@ -7,30 +7,20 @@ import {dollar} from '../../utils/Icons';
 import Chart from '../Chart/Chart';
 
 function Dashboard() {
-    const {totalExpenses, incomes, expenses, totalIncome, totalBalance, getIncomes, getExpenses, observer} = useGlobalContext()
-    const [error, setError] = useState(null)
+    const {totalExpenses, incomes, expenses, totalIncome, totalBalance, fetchIncomes, fetchExpenses, observer, loading, error} = useGlobalContext()
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                await getIncomes()
-                await getExpenses()
-            } catch (err) {
-                setError("Failed to fetch data. Please try again later.")
+        const handleUpdate = (data) => {
+            if (data.type === 'incomes' || data.type === 'expenses') {
+                fetchIncomes()
+                fetchExpenses()
             }
         }
-        fetchData()
 
-        const handleDataUpdate = (data) => {
-            console.log('Data updated:', data)
-            if (data.type === 'incomes') getIncomes()
-            if (data.type === 'expenses') getExpenses()
-        }
+        observer.subscribe(handleUpdate)
 
-        observer.subscribe(handleDataUpdate)
-
-        return () => observer.unsubscribe(handleDataUpdate)
-    }, [getIncomes, getExpenses, observer])
+        return () => observer.unsubscribe(handleUpdate)
+    }, [observer, fetchIncomes, fetchExpenses])
 
     const getMinMaxAmount = (items) => {
         if (items.length === 0) return { min: 0, max: 0 }
@@ -41,11 +31,15 @@ function Dashboard() {
         }
     }
 
-    const { min: minIncome, max: maxIncome } = getMinMaxAmount(incomes)
-    const { min: minExpense, max: maxExpense } = getMinMaxAmount(expenses)
+    const { min: minIncome, max: maxIncome } = useMemo(() => getMinMaxAmount(incomes), [incomes])
+    const { min: minExpense, max: maxExpense } = useMemo(() => getMinMaxAmount(expenses), [expenses])
+
+    if (loading) {
+        return <DashboardStyled>Loading...</DashboardStyled>
+    }
 
     if (error) {
-        return <div>Error: {error}</div>
+        return <DashboardStyled>Error: {error}</DashboardStyled>
     }
 
     return (

@@ -1,31 +1,47 @@
-import React, {useEffect, useMemo, useState} from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import styled from 'styled-components'
-import {useGlobalContext} from '../../context/globalContext';
-import {InnerLayout} from '../../styles/Layouts';
+import { useGlobalContext } from '../../context/globalContext';
+import { InnerLayout } from '../../styles/Layouts';
 import ExpenseForm from './ExpenseForm';
 import IncomeItem from '../IncomeItem/IncomeItem';
 
 function Expenses() {
-    const { expenses, getExpenses, deleteExpense, totalExpenses } = useGlobalContext()
-    const [error, setError] = useState(null)
+    const { expenses, deleteExpense, totalExpenses, loading, error, setError, fetchExpenses, observer } = useGlobalContext()
+    const [localExpenses, setLocalExpenses] = useState(expenses)
+
+    const handleUpdate = useCallback((data) => {
+        if (data.type === 'expenses') {
+            setLocalExpenses(data.data)
+        }
+    }, [])
 
     useEffect(() => {
-        const fetchExpenses = async () => {
-            try {
-                await getExpenses()
-            } catch (err) {
-                setError('Failed to fetch expenses')
-            }
-        }
+        observer.subscribe(handleUpdate)
         fetchExpenses()
-    }, [getExpenses])
 
-    const sortedExpenses = useMemo(() => {
-        return [...expenses].sort((a, b) => new Date(b.date) - new Date(a.date))
+        return () => observer.unsubscribe(handleUpdate)
+    }, [observer, fetchExpenses, handleUpdate])
+
+    useEffect(() => {
+        setLocalExpenses(expenses)
     }, [expenses])
 
+    const handleDeleteExpense = async (id) => {
+        try {
+            await deleteExpense(id)
+            // After successful deletion, fetch the updated expenses
+            await fetchExpenses()
+        } catch (err) {
+            setError(err.message || 'An error occurred while deleting the expense')
+        }
+    }
+
+    if (loading) {
+        return <ExpenseStyled>Loading...</ExpenseStyled>
+    }
+
     if (error) {
-        return <div>Error: {error}</div>
+        return <ExpenseStyled>Error: {error}</ExpenseStyled>
     }
 
     return (
@@ -38,11 +54,11 @@ function Expenses() {
                         <ExpenseForm />
                     </div>
                     <div className="incomes">
-                        {sortedExpenses.map((expense) => {
-                            const { id, _id, title, amount, date, category, description, type } = expense;
+                        {localExpenses.map((expense) => {
+                            const { _id, id, title, amount, date, category, description, type } = expense;
                             return <IncomeItem
-                                key={id || _id}
-                                id={id || _id}
+                                key={_id || id}
+                                id={_id || id}
                                 title={title}
                                 description={description}
                                 amount={amount}
@@ -50,7 +66,7 @@ function Expenses() {
                                 type={type}
                                 category={category}
                                 indicatorColor="var(--color-red)"
-                                deleteItem={deleteExpense}
+                                deleteItem={handleDeleteExpense}
                             />
                         })}
                     </div>

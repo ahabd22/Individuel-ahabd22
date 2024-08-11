@@ -3,7 +3,7 @@ import axios from 'axios'
 import Observer from './../Observer/Observer'
 import CacheService from './../Cache/CacheService'
 
-const BASE_URL = "http://localhost:5000/";
+const BASE_URL = "http://localhost:5000/api/v1/";
 
 const GlobalContext = React.createContext()
 
@@ -11,82 +11,98 @@ export const GlobalProvider = ({children}) => {
     const [incomes, setIncomes] = useState([])
     const [expenses, setExpenses] = useState([])
     const [error, setError] = useState(null)
+    const [loading, setLoading] = useState(true)
     const observer = new Observer()
     const cacheService = new CacheService()
 
     const fetchData = useCallback(async (url, setStateFunc, cacheKey) => {
-        const cachedData = cacheService.get(cacheKey)
-        if (cachedData) {
-            setStateFunc(cachedData)
-            return
-        }
-
         try {
             const response = await axios.get(url)
             setStateFunc(response.data)
-            cacheService.set(cacheKey, response.data)
+            cacheService.set(cacheKey, response.data, 60000) // Cache for 1 minute
             observer.notify({ type: cacheKey, data: response.data })
+            return response.data
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred')
+            return null
         }
     }, [])
 
-    const getIncomes = useCallback(() => fetchData(`${BASE_URL}api/v1/incomes/get-incomes`, setIncomes, 'incomes'), [fetchData])
-    const getExpenses = useCallback(() => fetchData(`${BASE_URL}api/v1/expenses/get-expenses`, setExpenses, 'expenses'), [fetchData])
+    const fetchIncomes = useCallback(() => fetchData(`${BASE_URL}incomes/get-incomes`, setIncomes, 'incomes'), [fetchData])
+    const fetchExpenses = useCallback(() => fetchData(`${BASE_URL}expenses/get-expenses`, setExpenses, 'expenses'), [fetchData])
 
     useEffect(() => {
-        getIncomes()
-        getExpenses()
-
-        const handleDataUpdate = (data) => {
-            if (data.type === 'incomes') setIncomes(data.data)
-            if (data.type === 'expenses') setExpenses(data.data)
+        const loadData = async () => {
+            setLoading(true)
+            await Promise.all([fetchIncomes(), fetchExpenses()])
+            setLoading(false)
         }
-
-        observer.subscribe(handleDataUpdate)
-
-        return () => observer.unsubscribe(handleDataUpdate)
-    }, [getIncomes, getExpenses])
+        loadData()
+    }, [fetchIncomes, fetchExpenses])
 
     const addIncome = async (income) => {
         try {
-            await axios.post(`${BASE_URL}api/v1/incomes/add-income`, income)
-            getIncomes()
+            setLoading(true)
+            const response = await axios.post(`${BASE_URL}incomes/add-income`, income)
+            if (response.data === "Income Added") {
+                const newIncomes = await fetchIncomes()
+                setIncomes(newIncomes)
+                observer.notify({ type: 'incomes', data: newIncomes })
+            }
         } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred')
+            setError(err.response?.data?.message || 'Failed to add income')
+        } finally {
+            setLoading(false)
         }
     }
 
     const deleteIncome = async (id) => {
         try {
-            await axios.delete(`${BASE_URL}api/v1/incomes/delete-income/${id}`)
-            getIncomes()
+            setLoading(true)
+            await axios.delete(`${BASE_URL}incomes/delete-income/${id}`)
+            const newIncomes = await fetchIncomes()
+            setIncomes(newIncomes)
+            observer.notify({ type: 'incomes', data: newIncomes })
         } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred')
+            setError(err.response?.data?.message || 'Failed to delete income')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const addExpense = async (expense) => {
+        try {
+            setLoading(true)
+            const response = await axios.post(`${BASE_URL}expenses/add-expense`, expense)
+            if (response.data === "Expense Added") {
+                const newExpenses = await fetchExpenses()
+                setExpenses(newExpenses)
+                observer.notify({ type: 'expenses', data: newExpenses })
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to add expense')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const deleteExpense = async (id) => {
+        try {
+            setLoading(true)
+            await axios.delete(`${BASE_URL}expenses/delete-expense/${id}`)
+            const newExpenses = await fetchExpenses()
+            setExpenses(newExpenses)
+            observer.notify({ type: 'expenses', data: newExpenses })
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to delete expense')
+        } finally {
+            setLoading(false)
         }
     }
 
     const totalIncome = useCallback(() => {
         return incomes.reduce((total, income) => total + Number(income.amount), 0);
     }, [incomes])
-
-    const addExpense = async (expense) => {
-        try {
-            await axios.post(`${BASE_URL}api/v1/expenses/add-expense`, expense)
-            getExpenses()
-        } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred')
-        }
-    }
-
-    const deleteExpense = async (id) => {
-        try {
-            await axios.delete(`${BASE_URL}api/v1/expenses/delete-expense/${id}`)
-            getExpenses()
-        } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred')
-        }
-    }
 
     const totalExpenses = useCallback(() => {
         return expenses.reduce((total, expense) => total + Number(expense.amount), 0);
@@ -102,43 +118,26 @@ export const GlobalProvider = ({children}) => {
         return history.slice(0, 3)
     }, [incomes, expenses])
 
-    const getStockData = async (symbol) => {
-        try {
-            const response = await axios.get(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=LKYKNZ4M7BT7S2GC`);
-            const timeSeriesData = response.data['Time Series (Daily)'];
-            const formattedData = Object.entries(timeSeriesData)
-                .map(([date, values]) => ({
-                    date,
-                    close: parseFloat(values['4. close'])
-                }))
-                .slice(0, 30);
-
-            return formattedData;
-        } catch (error) {
-            console.error('Error fetching stock data:', error);
-            setError('Error fetching stock data')
-        }
-    };
-
     return (
         <GlobalContext.Provider value={{
-            observer,
-            cacheService,
-            getStockData,
             addIncome,
-            getIncomes,
-            incomes,
             deleteIncome,
+            incomes,
+            addExpense,
+            deleteExpense,
             expenses,
             totalIncome,
-            addExpense,
-            getExpenses,
-            deleteExpense,
             totalExpenses,
             totalBalance,
             transactionHistory,
             error,
-            setError
+            setError,
+            loading,
+            setLoading,
+            fetchIncomes,
+            fetchExpenses,
+            observer,
+            cacheService
         }}>
             {children}
         </GlobalContext.Provider>

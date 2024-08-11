@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import styled from 'styled-components'
 import {useGlobalContext} from '../../context/globalContext';
 import {InnerLayout} from '../../styles/Layouts';
@@ -6,27 +6,35 @@ import Form from '../Form/Form';
 import IncomeItem from '../IncomeItem/IncomeItem';
 
 function Income() {
-    const { incomes, getIncomes, deleteIncome, totalIncome } = useGlobalContext()
-    const [error, setError] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const { incomes, deleteIncome, totalIncome, loading, error, setError, fetchIncomes, observer } = useGlobalContext()
+    const [localIncomes, setLocalIncomes] = useState(incomes)
+
+    const handleUpdate = useCallback((data) => {
+        if (data.type === 'incomes') {
+            setLocalIncomes(data.data)
+        }
+    }, [])
 
     useEffect(() => {
-        const fetchIncomes = async () => {
-            try {
-                setLoading(true)
-                await getIncomes()
-            } catch (err) {
-                setError('Failed to fetch incomes')
-            } finally {
-                setLoading(false)
-            }
-        }
+        observer.subscribe(handleUpdate)
         fetchIncomes()
-    }, [getIncomes])
 
-    const sortedIncomes = useMemo(() => {
-        return [...incomes].sort((a, b) => new Date(b.date) - new Date(a.date))
+        return () => observer.unsubscribe(handleUpdate)
+    }, [observer, fetchIncomes, handleUpdate])
+
+    useEffect(() => {
+        setLocalIncomes(incomes)
     }, [incomes])
+
+    const handleDeleteIncome = async (id) => {
+        try {
+            await deleteIncome(id)
+            // After successful deletion, fetch the updated incomes
+            await fetchIncomes()
+        } catch (err) {
+            setError(err.message || 'An error occurred while deleting the income')
+        }
+    }
 
     if (loading) {
         return <IncomeStyled>Loading...</IncomeStyled>
@@ -46,11 +54,11 @@ function Income() {
                         <Form />
                     </div>
                     <div className="incomes">
-                        {sortedIncomes.map((income) => {
-                            const {id, _id, title, amount, date, category, description, type} = income;
+                        {localIncomes.map((income) => {
+                            const {_id, id, title, amount, date, category, description, type} = income;
                             return <IncomeItem
-                                key={id || _id}
-                                id={id || _id}
+                                key={_id || id}
+                                id={_id || id}
                                 title={title}
                                 description={description}
                                 amount={amount}
@@ -58,7 +66,7 @@ function Income() {
                                 type={type}
                                 category={category}
                                 indicatorColor="var(--color-green)"
-                                deleteItem={deleteIncome}
+                                deleteItem={handleDeleteIncome}
                             />
                         })}
                     </div>
