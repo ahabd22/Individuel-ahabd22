@@ -1,5 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState } from "react"
 import axios from 'axios'
+import Observer from './../Observer/Observer'
+import CacheService from './../Cache/CacheService'
 
 const BASE_URL = "http://localhost:5000/";
 
@@ -9,22 +11,41 @@ export const GlobalProvider = ({children}) => {
     const [incomes, setIncomes] = useState([])
     const [expenses, setExpenses] = useState([])
     const [error, setError] = useState(null)
+    const observer = new Observer()
+    const cacheService = new CacheService()
 
-    const fetchData = useCallback(async (url, setStateFunc) => {
+    const fetchData = useCallback(async (url, setStateFunc, cacheKey) => {
+        const cachedData = cacheService.get(cacheKey)
+        if (cachedData) {
+            setStateFunc(cachedData)
+            return
+        }
+
         try {
             const response = await axios.get(url)
             setStateFunc(response.data)
+            cacheService.set(cacheKey, response.data)
+            observer.notify({ type: cacheKey, data: response.data })
         } catch (err) {
             setError(err.response?.data?.message || 'An error occurred')
         }
     }, [])
 
-    const getIncomes = useCallback(() => fetchData(`${BASE_URL}api/v1/incomes/get-incomes`, setIncomes), [fetchData])
-    const getExpenses = useCallback(() => fetchData(`${BASE_URL}api/v1/expenses/get-expenses`, setExpenses), [fetchData])
+    const getIncomes = useCallback(() => fetchData(`${BASE_URL}api/v1/incomes/get-incomes`, setIncomes, 'incomes'), [fetchData])
+    const getExpenses = useCallback(() => fetchData(`${BASE_URL}api/v1/expenses/get-expenses`, setExpenses, 'expenses'), [fetchData])
 
     useEffect(() => {
         getIncomes()
         getExpenses()
+
+        const handleDataUpdate = (data) => {
+            if (data.type === 'incomes') setIncomes(data.data)
+            if (data.type === 'expenses') setExpenses(data.data)
+        }
+
+        observer.subscribe(handleDataUpdate)
+
+        return () => observer.unsubscribe(handleDataUpdate)
     }, [getIncomes, getExpenses])
 
     const addIncome = async (income) => {
@@ -101,6 +122,8 @@ export const GlobalProvider = ({children}) => {
 
     return (
         <GlobalContext.Provider value={{
+            observer,
+            cacheService,
             getStockData,
             addIncome,
             getIncomes,

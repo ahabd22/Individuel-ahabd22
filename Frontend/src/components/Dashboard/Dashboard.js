@@ -7,7 +7,7 @@ import {dollar} from '../../utils/Icons';
 import Chart from '../Chart/Chart';
 
 function Dashboard() {
-    const {totalExpenses, incomes, expenses, totalIncome, totalBalance, getIncomes, getExpenses } = useGlobalContext()
+    const {totalExpenses, incomes, expenses, totalIncome, totalBalance, getIncomes, getExpenses, observer} = useGlobalContext()
     const [error, setError] = useState(null)
 
     useEffect(() => {
@@ -20,7 +20,17 @@ function Dashboard() {
             }
         }
         fetchData()
-    }, [])
+
+        const handleDataUpdate = (data) => {
+            console.log('Data updated:', data)
+            if (data.type === 'incomes') getIncomes()
+            if (data.type === 'expenses') getExpenses()
+        }
+
+        observer.subscribe(handleDataUpdate)
+
+        return () => observer.unsubscribe(handleDataUpdate)
+    }, [getIncomes, getExpenses, observer])
 
     const getMinMaxAmount = (items) => {
         if (items.length === 0) return { min: 0, max: 0 }
