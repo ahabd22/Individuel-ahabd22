@@ -19,7 +19,7 @@ export const GlobalProvider = ({children}) => {
         try {
             const response = await axios.get(url)
             setStateFunc(response.data)
-            cacheService.set(cacheKey, response.data, 60000) // Cache for 1 minute
+            cacheService.set(cacheKey, response.data, 60000)
             observer.notify({ type: cacheKey, data: response.data })
             return response.data
         } catch (err) {

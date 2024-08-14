@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useMemo} from 'react'
+import React, {useEffect, useMemo} from 'react'
 import styled from 'styled-components'
 import {useGlobalContext} from '../../context/globalContext';
 import History from '../../History/History';

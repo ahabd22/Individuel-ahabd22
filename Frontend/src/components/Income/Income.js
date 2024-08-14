@@ -29,7 +29,6 @@ function Income() {
     const handleDeleteIncome = async (id) => {
         try {
             await deleteIncome(id)
-            // After successful deletion, fetch the updated incomes
             await fetchIncomes()
         } catch (err) {
             setError(err.message || 'An error occurred while deleting the income')
@@ -48,7 +47,7 @@ function Income() {
         <IncomeStyled>
             <InnerLayout>
                 <StyledTitle>Tilføj ny Indkomst!</StyledTitle>
-                <h2 className="total-income">Samlet indkomst: <span>${totalIncome().toFixed(2)}</span></h2>
+                <h2 className="total-income">Samlede indkomst: <span>${totalIncome().toFixed(2)}</span></h2>
                 <div className="income-content">
                     <div className="form-container">
                         <Form />
